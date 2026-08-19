@@ -76,7 +76,7 @@ class NeuTTSManager: ObservableObject {
                 personalKey: tokenKey,
                 name: backboneModelName,
                 version: backboneVersion,
-                modelMode: .RUN_AUTO,
+                modelMode: ZeticMLange.ModelMode.RUN_AUTO,
                 onDownload: { [weak self] (progress: Float) in
                     Task { @MainActor in
                         self?.statusMessage = String(format: "Downloading backbone model: %.0f%%", progress * 100)
@@ -91,7 +91,7 @@ class NeuTTSManager: ObservableObject {
                 personalKey: tokenKey,
                 name: decoderModelName,
                 version: decoderVersion,
-                modelMode: .RUN_AUTO,
+                modelMode: ZeticMLange.ModelMode.RUN_AUTO,
                 onDownload: { [weak self] (progress: Float) in
                     Task { @MainActor in
                         self?.statusMessage = String(format: "Downloading decoder model: %.0f%%", progress * 100)
@@ -166,7 +166,7 @@ class NeuTTSManager: ObservableObject {
             personalKey: tokenKey,
             name: encoderModelName,
             version: encoderVersion,
-            modelMode: .RUN_AUTO,
+            modelMode: ZeticMLange.ModelMode.RUN_AUTO,
             onDownload: { [weak self] (progress: Float) in
                 Task { @MainActor in
                     self?.statusMessage = String(format: "Downloading encoder model: %.0f%%", progress * 100)
