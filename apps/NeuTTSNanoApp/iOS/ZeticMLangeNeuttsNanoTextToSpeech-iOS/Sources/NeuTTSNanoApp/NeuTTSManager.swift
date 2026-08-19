@@ -75,13 +75,7 @@ class NeuTTSManager: ObservableObject {
             backboneModel = try ZeticMLangeModel(
                 tokenKey: tokenKey,
                 name: backboneModelName,
-                version: backboneVersion,
-                onDownload: { [weak self] progress in
-                    Task { @MainActor in
-                        self?.statusMessage = String(format: "Downloading backbone model: %.0f%%", progress * 100)
-                        self?.appendLog(String(format: "Backbone download progress: %.1f%%", progress * 100))
-                    }
-                }
+                version: backboneVersion
             )
             appendLog("Backbone model loaded")
 
@@ -89,13 +83,7 @@ class NeuTTSManager: ObservableObject {
             decoderModel = try ZeticMLangeModel(
                 tokenKey: tokenKey,
                 name: decoderModelName,
-                version: decoderVersion,
-                onDownload: { [weak self] progress in
-                    Task { @MainActor in
-                        self?.statusMessage = String(format: "Downloading decoder model: %.0f%%", progress * 100)
-                        self?.appendLog(String(format: "Decoder download progress: %.1f%%", progress * 100))
-                    }
-                }
+                version: decoderVersion
             )
             appendLog("Decoder model loaded")
 
@@ -163,13 +151,7 @@ class NeuTTSManager: ObservableObject {
         encoderModel = try ZeticMLangeModel(
             tokenKey: tokenKey,
             name: encoderModelName,
-            version: encoderVersion,
-            onDownload: { [weak self] progress in
-                Task { @MainActor in
-                    self?.statusMessage = String(format: "Downloading encoder model: %.0f%%", progress * 100)
-                    self?.appendLog(String(format: "Encoder download progress: %.1f%%", progress * 100))
-                }
-            }
+            version: encoderVersion
         )
         appendLog("Encoder model loaded")
         await MainActor.run {
