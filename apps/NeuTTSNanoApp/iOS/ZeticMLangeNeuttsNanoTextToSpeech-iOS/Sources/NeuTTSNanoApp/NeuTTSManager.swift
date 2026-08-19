@@ -79,9 +79,12 @@ class NeuTTSManager: ObservableObject {
                 version: backboneVersion,
                 modelMode: ZeticMLange.ModelMode.RUN_AUTO,
                 onDownload: { [weak self] (progress: Float) in
-                    Task { @MainActor in
-                        self?.statusMessage = String(format: "Downloading backbone model: %.0f%%", progress * 100)
-                        self?.appendLog(String(format: "Backbone download progress: %.1f%%", progress * 100))
+                    let pct = Int(progress * 100)
+                    let statusStr = "Downloading backbone model: \(pct)%"
+                    let logStr = String(format: "Backbone download progress: %.1f%%", progress * 100)
+                    DispatchQueue.main.async {
+                        self?.statusMessage = statusStr
+                        self?.appendLog(logStr)
                     }
                 }
             )
@@ -93,9 +96,12 @@ class NeuTTSManager: ObservableObject {
                 version: decoderVersion,
                 modelMode: ZeticMLange.ModelMode.RUN_AUTO,
                 onDownload: { [weak self] (progress: Float) in
-                    Task { @MainActor in
-                        self?.statusMessage = String(format: "Downloading decoder model: %.0f%%", progress * 100)
-                        self?.appendLog(String(format: "Decoder download progress: %.1f%%", progress * 100))
+                    let pct = Int(progress * 100)
+                    let statusStr = "Downloading decoder model: \(pct)%"
+                    let logStr = String(format: "Decoder download progress: %.1f%%", progress * 100)
+                    DispatchQueue.main.async {
+                        self?.statusMessage = statusStr
+                        self?.appendLog(logStr)
                     }
                 }
             )
@@ -168,9 +174,12 @@ class NeuTTSManager: ObservableObject {
             version: encoderVersion,
             modelMode: ZeticMLange.ModelMode.RUN_AUTO,
             onDownload: { [weak self] (progress: Float) in
-                Task { @MainActor in
-                    self?.statusMessage = String(format: "Downloading encoder model: %.0f%%", progress * 100)
-                    self?.appendLog(String(format: "Encoder download progress: %.1f%%", progress * 100))
+                let pct = Int(progress * 100)
+                let statusStr = "Downloading encoder model: \(pct)%"
+                let logStr = String(format: "Encoder download progress: %.1f%%", progress * 100)
+                DispatchQueue.main.async {
+                    self?.statusMessage = statusStr
+                    self?.appendLog(logStr)
                 }
             }
         )
