@@ -9,7 +9,8 @@ import Foundation
 import AVFoundation
 import ZeticMLange
 
-class NeuTTSManager: ObservableObject {
+@MainActor
+final class NeuTTSManager: ObservableObject {
     static let defaultTokenKey = "YOUR_PERSONAL_ACCESS_TOKEN"
 
     @Published var tokenKey: String = UserDefaults.standard.string(forKey: "zetic_token_key") ?? defaultTokenKey
@@ -65,10 +66,8 @@ class NeuTTSManager: ObservableObject {
 
     private func initializeModels() async {
         do {
-            await MainActor.run {
-                statusMessage = "Initializing models..."
-                errorMessage = nil
-            }
+            statusMessage = "Initializing models..."
+            errorMessage = nil
 
             // Load only the core models at startup to reduce initial wait.
             let runtime = try ZeticMLangeRuntime(runtimeKey: tokenKey)
@@ -78,15 +77,7 @@ class NeuTTSManager: ObservableObject {
                 name: backboneModelName,
                 version: backboneVersion,
                 modelMode: ZeticMLange.ModelMode.RUN_AUTO,
-                onDownload: { [weak self] (progress: Float) in
-                    let pct = Int(progress * 100)
-                    let statusStr = "Downloading backbone model: \(pct)%"
-                    let logStr = String(format: "Backbone download progress: %.1f%%", progress * 100)
-                    DispatchQueue.main.async {
-                        self?.statusMessage = statusStr
-                        self?.appendLog(logStr)
-                    }
-                }
+                onDownload: nil
             )
             appendLog("Backbone model loaded")
 
@@ -95,23 +86,13 @@ class NeuTTSManager: ObservableObject {
                 name: decoderModelName,
                 version: decoderVersion,
                 modelMode: ZeticMLange.ModelMode.RUN_AUTO,
-                onDownload: { [weak self] (progress: Float) in
-                    let pct = Int(progress * 100)
-                    let statusStr = "Downloading decoder model: \(pct)%"
-                    let logStr = String(format: "Decoder download progress: %.1f%%", progress * 100)
-                    DispatchQueue.main.async {
-                        self?.statusMessage = statusStr
-                        self?.appendLog(logStr)
-                    }
-                }
+                onDownload: nil
             )
             appendLog("Decoder model loaded")
 
-            await MainActor.run {
-                isInitialized = true
-                errorMessage = nil
-                statusMessage = "Models ready (encoder loads on demand)"
-            }
+            isInitialized = true
+            errorMessage = nil
+            statusMessage = "Models ready (encoder loads on demand)"
 
         } catch {
             let errorText = error.localizedDescription
@@ -121,12 +102,10 @@ class NeuTTSManager: ObservableObject {
             } else {
                 detailedMessage = "Failed to initialize ZETIC models (\(errorText)). Activated Native Offline Speech Engine."
             }
-            await MainActor.run {
-                errorMessage = detailedMessage
-                useNativeFallbackEngine = true
-                isInitialized = true
-                statusMessage = "Active: Native Offline Speech Engine (Fallback)"
-            }
+            errorMessage = detailedMessage
+            useNativeFallbackEngine = true
+            isInitialized = true
+            statusMessage = "Active: Native Offline Speech Engine (Fallback)"
             appendLog("ZETIC model load failed: \(errorText)")
             appendLog("Fallback to Apple Native Speech Engine activated.")
         }
@@ -136,27 +115,23 @@ class NeuTTSManager: ObservableObject {
         let trimmed = newKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         UserDefaults.standard.set(trimmed, forKey: "zetic_token_key")
-        await MainActor.run {
-            self.tokenKey = trimmed
-            self.isInitialized = false
-            self.errorMessage = nil
-            self.backboneModel = nil
-            self.decoderModel = nil
-            self.encoderModel = nil
-            self.statusMessage = "Token updated. Reinitializing..."
-        }
+        self.tokenKey = trimmed
+        self.isInitialized = false
+        self.errorMessage = nil
+        self.backboneModel = nil
+        self.decoderModel = nil
+        self.encoderModel = nil
+        self.statusMessage = "Token updated. Reinitializing..."
         appendLog("Updated ZETIC token: \(trimmed.prefix(6))...\(trimmed.suffix(4))")
         await initializeModels()
     }
 
     func retryInitialization() async {
-        await MainActor.run {
-            self.isInitialized = false
-            self.errorMessage = nil
-            self.backboneModel = nil
-            self.decoderModel = nil
-            self.encoderModel = nil
-        }
+        self.isInitialized = false
+        self.errorMessage = nil
+        self.backboneModel = nil
+        self.decoderModel = nil
+        self.encoderModel = nil
         await initializeModels()
     }
 
@@ -164,41 +139,25 @@ class NeuTTSManager: ObservableObject {
         if encoderModel != nil {
             return
         }
-        await MainActor.run {
-            statusMessage = "Loading encoder model..."
-        }
+        statusMessage = "Loading encoder model..."
         let runtime = try ZeticMLangeRuntime(runtimeKey: tokenKey)
         appendLog("Loading encoder model: \(encoderModelName) v\(encoderVersion)")
         encoderModel = try await runtime.loadModel(
             name: encoderModelName,
             version: encoderVersion,
             modelMode: ZeticMLange.ModelMode.RUN_AUTO,
-            onDownload: { [weak self] (progress: Float) in
-                let pct = Int(progress * 100)
-                let statusStr = "Downloading encoder model: \(pct)%"
-                let logStr = String(format: "Encoder download progress: %.1f%%", progress * 100)
-                DispatchQueue.main.async {
-                    self?.statusMessage = statusStr
-                    self?.appendLog(logStr)
-                }
-            }
+            onDownload: nil
         )
         appendLog("Encoder model loaded")
-        await MainActor.run {
-            statusMessage = "Models ready"
-        }
+        statusMessage = "Models ready"
     }
 
     func synthesizeSpeech(text: String, referenceAudioData: Data?, referenceText: String?) async throws -> Data {
-        await MainActor.run {
-            isProcessing = true
-            errorMessage = nil
-        }
+        isProcessing = true
+        errorMessage = nil
 
         defer {
-            Task { @MainActor in
-                isProcessing = false
-            }
+            isProcessing = false
         }
 
         // Check if we should use the native engine fallback
@@ -994,9 +953,7 @@ class NeuTTSManager: ObservableObject {
     }
 
     func resetModelCache() async {
-        await MainActor.run {
-            statusMessage = "Resetting model cache..."
-        }
+        statusMessage = "Resetting model cache..."
         appendLog("Resetting model cache")
 
         let fileManager = FileManager.default
@@ -1022,13 +979,11 @@ class NeuTTSManager: ObservableObject {
             appendLog("Failed to reset model cache: \(error.localizedDescription)")
         }
 
-        await MainActor.run {
-            isInitialized = false
-            backboneModel = nil
-            encoderModel = nil
-            decoderModel = nil
-            statusMessage = "Model cache cleared. Reinitializing..."
-        }
+        isInitialized = false
+        backboneModel = nil
+        encoderModel = nil
+        decoderModel = nil
+        statusMessage = "Model cache cleared. Reinitializing..."
 
         await initializeModels()
     }
@@ -1047,14 +1002,12 @@ class NeuTTSManager: ObservableObject {
     }
 
     func appendLog(_ message: String) {
-        Task { @MainActor in
-            let timestamp = ISO8601DateFormatter().string(from: Date())
-            let line = "[\(timestamp)] \(message)"
-            print(line)
-            logLines.append(line)
-            if logLines.count > 500 {
-                logLines.removeFirst(logLines.count - 500)
-            }
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let line = "[\(timestamp)] \(message)"
+        print(line)
+        logLines.append(line)
+        if logLines.count > 500 {
+            logLines.removeFirst(logLines.count - 500)
         }
     }
 }
