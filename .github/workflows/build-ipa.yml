@@ -1,0 +1,53 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/NeuTTSNanoApp/**'
+      - '.github/workflows/build-ipa.yml'
+  workflow_dispatch:
+
+jobs:
+  build-neutts-nano-ipa:
+    name: Build NeuTTS Nano Unsigned IPA
+    runs-on: macos-14
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.0.app 2>/dev/null || sudo xcode-select -s /Applications/Xcode.app 2>/dev/null || true
+          xcodebuild -version
+
+      - name: Build NeuTTS Nano App (Unsigned)
+        run: |
+          mkdir -p build/Release-iphoneos
+          xcodebuild -project apps/NeuTTSNanoApp/iOS/ZeticMLangeNeuttsNanoTextToSpeech-iOS.xcodeproj \
+            -target NeuTTSNanoApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build \
+            CONFIGURATION_BUILD_DIR="${PWD}/build/Release-iphoneos"
+
+      - name: Package Unsigned IPA
+        run: |
+          mkdir -p build/Payload
+          cp -R build/Release-iphoneos/NeuTTSNanoApp.app build/Payload/
+          cd build
+          zip -qr ../NeuTTSNanoApp-unsigned.ipa Payload
+          cd ..
+          ls -lh NeuTTSNanoApp-unsigned.ipa
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeuTTSNanoApp-unsigned-ipa
+          path: NeuTTSNanoApp-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
