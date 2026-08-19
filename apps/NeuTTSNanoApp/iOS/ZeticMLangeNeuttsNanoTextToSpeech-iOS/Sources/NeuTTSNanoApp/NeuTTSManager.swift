@@ -75,7 +75,14 @@ class NeuTTSManager: ObservableObject {
             backboneModel = try ZeticMLangeModel(
                 personalKey: tokenKey,
                 name: backboneModelName,
-                version: backboneVersion
+                version: backboneVersion,
+                modelMode: .RUN_AUTO,
+                onDownload: { [weak self] (progress: Float) in
+                    Task { @MainActor in
+                        self?.statusMessage = String(format: "Downloading backbone model: %.0f%%", progress * 100)
+                        self?.appendLog(String(format: "Backbone download progress: %.1f%%", progress * 100))
+                    }
+                }
             )
             appendLog("Backbone model loaded")
 
@@ -83,7 +90,14 @@ class NeuTTSManager: ObservableObject {
             decoderModel = try ZeticMLangeModel(
                 personalKey: tokenKey,
                 name: decoderModelName,
-                version: decoderVersion
+                version: decoderVersion,
+                modelMode: .RUN_AUTO,
+                onDownload: { [weak self] (progress: Float) in
+                    Task { @MainActor in
+                        self?.statusMessage = String(format: "Downloading decoder model: %.0f%%", progress * 100)
+                        self?.appendLog(String(format: "Decoder download progress: %.1f%%", progress * 100))
+                    }
+                }
             )
             appendLog("Decoder model loaded")
 
@@ -151,7 +165,14 @@ class NeuTTSManager: ObservableObject {
         encoderModel = try ZeticMLangeModel(
             personalKey: tokenKey,
             name: encoderModelName,
-            version: encoderVersion
+            version: encoderVersion,
+            modelMode: .RUN_AUTO,
+            onDownload: { [weak self] (progress: Float) in
+                Task { @MainActor in
+                    self?.statusMessage = String(format: "Downloading encoder model: %.0f%%", progress * 100)
+                    self?.appendLog(String(format: "Encoder download progress: %.1f%%", progress * 100))
+                }
+            }
         )
         appendLog("Encoder model loaded")
         await MainActor.run {

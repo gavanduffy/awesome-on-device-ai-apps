@@ -1,7 +1,7 @@
 import Foundation
 
 final class EspeakPhonemizer {
-    static let shared = EspeakPhonemizer()
+    nonisolated(unsafe) static let shared = EspeakPhonemizer()
 
     private var initialized = false
 
