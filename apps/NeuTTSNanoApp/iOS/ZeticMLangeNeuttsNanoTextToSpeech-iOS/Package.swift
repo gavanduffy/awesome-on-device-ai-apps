@@ -10,7 +10,7 @@ let package = Package(
         .executable(name: "NeuTTSNanoApp", targets: ["NeuTTSNanoApp"])
     ],
     dependencies: [
-        .package(url: "https://github.com/zetic-ai/ZeticMLangeiOS.git", .upToNextMajor(from: "1.0.0"))
+        .package(url: "https://github.com/zetic-ai/ZeticMLangeiOS.git", .upToNextMajor(from: "1.10.0"))
     ],
     targets: [
         .executableTarget(
