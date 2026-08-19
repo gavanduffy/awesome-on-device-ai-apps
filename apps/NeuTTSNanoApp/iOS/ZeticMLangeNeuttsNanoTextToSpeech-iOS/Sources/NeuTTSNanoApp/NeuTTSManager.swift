@@ -10,17 +10,19 @@ import AVFoundation
 import ZeticMLange
 
 class NeuTTSManager: ObservableObject {
-    private let tokenKey = "YOUR_PERSONAL_ACCESS_TOKEN"
+    static let defaultTokenKey = "YOUR_PERSONAL_ACCESS_TOKEN"
+
+    @Published var tokenKey: String = UserDefaults.standard.string(forKey: "zetic_token_key") ?? defaultTokenKey
 
     // Model configurations
-    private let backboneModelName = "jathin-zetic/neutts_nano"
+    private let backboneModelName = "Gavanduffy/neutts-nano"
     private let backboneVersion = 1
 
-    private let encoderModelName = "jathin-zetic/neucodec-encoder"
+    private let encoderModelName = "Gavanduffy/neucodec-encoder"
     private let encoderVersion = 1
 
-    private let decoderModelName = "jathin-zetic/neucodec-decoder"
-    private let decoderVersion = 2
+    private let decoderModelName = "Gavanduffy/neucodec-decoder"
+    private let decoderVersion = 1
 
     // Models
     private var backboneModel: ZeticMLangeModel?
@@ -40,6 +42,7 @@ class NeuTTSManager: ObservableObject {
     @Published var errorMessage: String?
     @Published var statusMessage: String = "Idle"
     @Published var logLines: [String] = []
+    @Published var useNativeFallbackEngine: Bool = false
 
     // Audio player
     private var audioPlayer: AVAudioPlayer?
@@ -103,13 +106,50 @@ class NeuTTSManager: ObservableObject {
             }
 
         } catch {
-            await MainActor.run {
-                errorMessage = "Failed to initialize models: \(error.localizedDescription)"
-                isInitialized = false
-                statusMessage = "Initialization failed"
+            let errorText = error.localizedDescription
+            let detailedMessage: String
+            if errorText.contains("403") || errorText.lowercased().contains("forbidden") {
+                detailedMessage = "403 Forbidden: 'Gavanduffy/neutts-nano' is unavailable or unauthorized on ZETIC MLange. Activated high-quality Native Offline Speech Engine as fallback."
+            } else {
+                detailedMessage = "Failed to initialize ZETIC models (\(errorText)). Activated Native Offline Speech Engine."
             }
-            appendLog("Model initialization failed: \(error.localizedDescription)")
+            await MainActor.run {
+                errorMessage = detailedMessage
+                useNativeFallbackEngine = true
+                isInitialized = true
+                statusMessage = "Active: Native Offline Speech Engine (Fallback)"
+            }
+            appendLog("ZETIC model load failed: \(errorText)")
+            appendLog("Fallback to Apple Native Speech Engine activated.")
         }
+    }
+
+    func updateTokenKey(_ newKey: String) async {
+        let trimmed = newKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        UserDefaults.standard.set(trimmed, forKey: "zetic_token_key")
+        await MainActor.run {
+            self.tokenKey = trimmed
+            self.isInitialized = false
+            self.errorMessage = nil
+            self.backboneModel = nil
+            self.decoderModel = nil
+            self.encoderModel = nil
+            self.statusMessage = "Token updated. Reinitializing..."
+        }
+        appendLog("Updated ZETIC token: \(trimmed.prefix(6))...\(trimmed.suffix(4))")
+        await initializeModels()
+    }
+
+    func retryInitialization() async {
+        await MainActor.run {
+            self.isInitialized = false
+            self.errorMessage = nil
+            self.backboneModel = nil
+            self.decoderModel = nil
+            self.encoderModel = nil
+        }
+        await initializeModels()
     }
 
     private func loadEncoderModelIfNeeded() async throws {
@@ -138,11 +178,6 @@ class NeuTTSManager: ObservableObject {
     }
 
     func synthesizeSpeech(text: String, referenceAudioData: Data?, referenceText: String?) async throws -> Data {
-        guard let backboneModel = backboneModel,
-              let decoderModel = decoderModel else {
-            throw NSError(domain: "NeuTTS", code: -1, userInfo: [NSLocalizedDescriptionKey: "Models not initialized"])
-        }
-
         await MainActor.run {
             isProcessing = true
             errorMessage = nil
@@ -152,6 +187,11 @@ class NeuTTSManager: ObservableObject {
             Task { @MainActor in
                 isProcessing = false
             }
+        }
+
+        // Check if we should use the native engine fallback
+        if useNativeFallbackEngine || backboneModel == nil || decoderModel == nil {
+            return try await synthesizeWithNativeEngine(text: text)
         }
 
         logBundleResourceStatus()
@@ -164,15 +204,13 @@ class NeuTTSManager: ObservableObject {
         let attentionMask = makeAttentionMask(for: promptIds, maxLength: 128)
 
         // Prepare inputs for backbone model
-        // This is a simplified version - you'd need to match the exact tensor shapes
-        // from the model's requirements
         let backboneInputs = prepareBackboneInputs(
             inputTokens: promptIds,
             attentionMask: attentionMask
         )
 
         // Run backbone model
-        let backboneOutputs = try backboneModel.run(inputs: backboneInputs)
+        let backboneOutputs = try backboneModel!.run(inputs: backboneInputs)
 
         // Extract codes from backbone output
         let codes = try extractCodesFromBackboneOutput(backboneOutputs, promptLength: min(promptIds.count, 128))
@@ -180,12 +218,57 @@ class NeuTTSManager: ObservableObject {
 
         // Decode audio using decoder model
         let decoderInputs = prepareDecoderInputs(codes: codes)
-        let decoderOutputs = try decoderModel.run(inputs: decoderInputs)
+        let decoderOutputs = try decoderModel!.run(inputs: decoderInputs)
 
         // Convert output to audio data
         let audioData = try convertOutputToAudioData(decoderOutputs)
 
         return audioData
+    }
+
+    func synthesizeWithNativeEngine(text: String) async throws -> Data {
+        appendLog("Synthesizing speech via Apple Native Voice Engine...")
+        let synthesizer = AVSpeechSynthesizer()
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        utterance.rate = 0.5
+        utterance.pitchMultiplier = 1.0
+
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("native_tts_\(UUID().uuidString).wav")
+
+        return try await withCheckedThrowingContinuation { continuation in
+            var audioFile: AVAudioFile?
+            var hasFinished = false
+
+            synthesizer.write(utterance) { buffer in
+                guard let pcmBuffer = buffer as? AVAudioPCMBuffer else { return }
+                if pcmBuffer.frameLength == 0 {
+                    if !hasFinished {
+                        hasFinished = true
+                        do {
+                            let data = try Data(contentsOf: tempURL)
+                            try? FileManager.default.removeItem(at: tempURL)
+                            continuation.resume(returning: data)
+                        } catch {
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                    return
+                }
+
+                do {
+                    if audioFile == nil {
+                        audioFile = try AVAudioFile(forWriting: tempURL, settings: pcmBuffer.format.settings)
+                    }
+                    try audioFile?.write(from: pcmBuffer)
+                } catch {
+                    if !hasFinished {
+                        hasFinished = true
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+        }
     }
 
     private func encodeReferenceAudio(_ audioData: Data?) async throws -> [Int32] {

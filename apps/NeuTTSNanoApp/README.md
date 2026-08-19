@@ -24,7 +24,7 @@ The app pulls its NPU-optimized weights on first launch, then runs fully offline
 
 | Model | Platforms | Runtime |
 | :-- | :-- | :-- |
-| [`NeuTTS Nano`](https://mlange.zetic.ai/p/jathin-zetic/neutts_nano) | iOS | [Melange](https://mlange.zetic.ai) |
+| [`NeuTTS Nano`](https://mlange.zetic.ai/p/Gavanduffy/neutts-nano) | iOS | [Melange](https://mlange.zetic.ai) |
 
 ---
 

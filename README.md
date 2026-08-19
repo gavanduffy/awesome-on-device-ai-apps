@@ -137,7 +137,7 @@ cd awesome-on-device-ai-apps
 
 | App | What it does | Model | Platforms | Try it |
 | :-- | :-- | :-- | :-- | :-- |
-| [**NeuTTS Nano**](apps/NeuTTSNanoApp) | On-device text-to-speech with voice cloning, via a three-stage NeuTTS Nano pipeline. | `NeuTTS Nano` | `iOS` | [Model ↗](https://mlange.zetic.ai/p/jathin-zetic/neutts_nano) |
+| [**NeuTTS Nano**](apps/NeuTTSNanoApp) | On-device text-to-speech with voice cloning, via a three-stage NeuTTS Nano pipeline. | `NeuTTS Nano` | `iOS` | [Model ↗](https://mlange.zetic.ai/p/Gavanduffy/neutts-nano) |
 | [**Qwen TTS**](apps/QwenTextToSpeech) | On-device text-to-speech with a custom voice, running the Qwen3-TTS pipeline on the NPU. | `Qwen3-TTS-0.6B` | `iOS` | [Model ↗](https://mlange.zetic.ai/p/jathin-zetic/qwen_tts06b_talker) |
 | [**YamNet**](apps/YamNet) | Classifies environmental sounds & audio events | `YAMNet` | `Android` `iOS` | [Model ↗](https://mlange.zetic.ai/p/google/Sound%20Classification%28YAMNET%29) |
 
