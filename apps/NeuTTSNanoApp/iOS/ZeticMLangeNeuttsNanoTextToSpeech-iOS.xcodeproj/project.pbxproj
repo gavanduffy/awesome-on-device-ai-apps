@@ -100,6 +100,9 @@
 			dependencies = (
 			);
 			name = NeuTTSNanoApp;
+			packageProductDependencies = (
+				7F75EB1A2F216B6C00AB8D5F /* ZeticMLange */,
+			);
 			productName = NeuTTSNanoApp;
 			productReference = 4B3C7F262A8B4C5D00000000 /* NeuTTSNanoApp.app */;
 			productType = "com.apple.product-type.application";
