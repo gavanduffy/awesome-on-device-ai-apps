@@ -72,7 +72,7 @@ class NeuTTSManager: ObservableObject {
 
             // Load only the core models at startup to reduce initial wait.
             appendLog("Loading backbone model: \(backboneModelName) v\(backboneVersion)")
-            backboneModel = try ZeticMLangeModel(
+            backboneModel = try await ZeticMLangeModel(
                 personalKey: tokenKey,
                 name: backboneModelName,
                 version: backboneVersion,
@@ -87,7 +87,7 @@ class NeuTTSManager: ObservableObject {
             appendLog("Backbone model loaded")
 
             appendLog("Loading decoder model: \(decoderModelName) v\(decoderVersion)")
-            decoderModel = try ZeticMLangeModel(
+            decoderModel = try await ZeticMLangeModel(
                 personalKey: tokenKey,
                 name: decoderModelName,
                 version: decoderVersion,
@@ -162,7 +162,7 @@ class NeuTTSManager: ObservableObject {
             statusMessage = "Loading encoder model..."
         }
         appendLog("Loading encoder model: \(encoderModelName) v\(encoderVersion)")
-        encoderModel = try ZeticMLangeModel(
+        encoderModel = try await ZeticMLangeModel(
             personalKey: tokenKey,
             name: encoderModelName,
             version: encoderVersion,
