@@ -7,7 +7,7 @@
 
 import Foundation
 import AVFoundation
-import ZeticMLange
+@preconcurrency import ZeticMLange
 
 @MainActor
 final class NeuTTSManager: ObservableObject {
