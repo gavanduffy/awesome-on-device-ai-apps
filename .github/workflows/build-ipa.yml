@@ -11,14 +11,19 @@ on:
 jobs:
   build-neutts-nano-ipa:
     name: Build NeuTTS Nano Unsigned IPA
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode
+      - name: Select Xcode 16+
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.0.app 2>/dev/null || sudo xcode-select -s /Applications/Xcode.app 2>/dev/null || true
+          for app in /Applications/Xcode_16*.app /Applications/Xcode.app; do
+            if [ -d "$app" ]; then
+              sudo xcode-select -s "$app"
+              break
+            fi
+          done
           xcodebuild -version
 
       - name: Build NeuTTS Nano App (Unsigned)
