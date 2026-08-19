@@ -1011,3 +1011,16 @@ final class NeuTTSManager: ObservableObject {
         }
     }
 }
+
+// Swift runtime coroutine frame allocator compatibility hooks for ZeticMLange
+@_cdecl("swift_coroFrameAlloc")
+public func _swift_coroFrameAlloc_compat(_ size: Int) -> UnsafeMutableRawPointer? {
+    return malloc(size)
+}
+
+@_cdecl("swift_coroFrameDealloc")
+public func _swift_coroFrameDealloc_compat(_ ptr: UnsafeMutableRawPointer?) {
+    if let ptr = ptr {
+        free(ptr)
+    }
+}
